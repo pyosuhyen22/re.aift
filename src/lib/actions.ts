@@ -47,16 +47,21 @@ export async function login(formData: FormData) {
       password,
       redirectTo: '/',
     })
-  } catch (error) {
-    if (error instanceof Error && error.message === 'NEXT_REDIRECT') {
-      throw error
+  } catch (error: any) {
+    if (error.type === 'CredentialsSignin') {
+      throw new Error('Invalid credentials')
     }
-    throw new Error('Invalid credentials')
+    // NextAuth v5 redirects by throwing an error, we need to let it bubble up
+    throw error
   }
 }
 
 export async function logout() {
-  await signOut({ redirectTo: '/' })
+  try {
+    await signOut({ redirectTo: '/' })
+  } catch (error) {
+    throw error
+  }
 }
 
 export async function createPost(formData: FormData) {

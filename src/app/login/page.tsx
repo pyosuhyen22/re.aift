@@ -14,7 +14,11 @@ export default function LoginPage() {
     try {
       await login(formData)
     } catch (err: any) {
-      setError(err.message || '로그인에 실패했습니다.')
+      // Auth.js redirects by throwing an error. In Client Components, 
+      // we should only set an error message if it's an actual auth failure.
+      if (err.message && !err.message.includes('redirect')) {
+        setError(err.message || '로그인에 실패했습니다.')
+      }
     } finally {
       setLoading(false)
     }
