@@ -97,61 +97,57 @@ export async function createPost(formData: FormData) {
   // 파일 업로드 처리 (Imgur API 사용)
   if (files && files.length > 0) {
     for (const f of files) {
-      const file = f as any;
-      if (!file || !file.size || !file.name) continue
-
-      // 이미지 파일만 허용
-      const isImage = file.type?.startsWith('image/') || /\.(jpg|jpeg|png|gif|webp)$/i.test(file.name);
-      if (!isImage) continue;
-
       try {
+        const file = f as any;
+        if (!file || !file.size || !file.name || typeof file.arrayBuffer !== 'function') continue;
+
+        // 이미지 파일만 허용
+        const isImage = file.type?.startsWith('image/') || /\.(jpg|jpeg|png|gif|webp)$/i.test(file.name);
+        if (!isImage) continue;
+
         const arrayBuffer = await file.arrayBuffer();
         const buffer = Buffer.from(arrayBuffer);
         const base64Image = buffer.toString('base64');
 
-        // Imgur API 호출 (익명 업로드)
+        // Imgur API 호출 (FormData 방식이 더 안정적)
+        const imgurFormData = new FormData();
+        imgurFormData.append('image', base64Image);
+        imgurFormData.append('type', 'base64');
+
         const response = await fetch('https://api.imgur.com/3/image', {
           method: 'POST',
           headers: {
             Authorization: 'Client-ID 799307d66827012', 
           },
-          body: JSON.stringify({
-            image: base64Image,
-            type: 'base64',
-          }),
+          body: imgurFormData,
         });
 
         const resData = await response.json();
         
-        if (!response.ok || !resData.success) {
-          console.error('Imgur Upload Failed:', resData);
-          // 업로드 실패 시 에러를 던져서 사용자에게 알림 (선택 사항)
-          throw new Error('이미지 업로드에 실패했습니다. (Imgur API 오류)');
+        if (response.ok && resData.success) {
+          const imageUrl = resData.data.link;
+          await prisma.attachment.create({
+            data: {
+              postId: post.id,
+              filename: file.name,
+              url: imageUrl,
+              mimetype: file.type || 'image/jpeg',
+              size: file.size,
+            }
+          });
+        } else {
+          console.error('Imgur Upload Failed for a file:', resData);
         }
-
-        const imageUrl = resData.data.link;
-
-        await prisma.attachment.create({
-          data: {
-            postId: post.id,
-            filename: file.name,
-            url: imageUrl,
-            mimetype: file.type || 'image/jpeg',
-            size: file.size,
-          }
-        })
       } catch (uploadError: any) {
-        console.error('File Upload Error (Imgur):', uploadError)
-        // 개별 파일 업로드 실패 시 전체 프로세스를 중단할지 결정
-        throw new Error(uploadError.message || '이미지 처리 중 오류가 발생했습니다.');
+        // 개별 파일 업로드 실패 시 로그만 남기고 다음 파일로 진행
+        console.error('Individual File Upload Error:', uploadError);
       }
     }
   }
 
-  if (post) {
-    revalidatePath('/')
-    redirect(`/posts/${post.id}`)
-  }
+  // 업로드 성공 여부와 상관없이 생성된 포스트로 이동 (Server Error 방지)
+  revalidatePath('/')
+  redirect(`/posts/${post.id}`)
 }
 
 export async function updatePost(id: string, formData: FormData) {
