@@ -73,7 +73,7 @@ export async function createPost(formData: FormData) {
   const title = formData.get('title') as string
   const content = formData.get('content') as string
   const categoryId = formData.get('categoryId') as string
-  const files = formData.getAll('files') as File[]
+  const files = formData.getAll('files')
 
   if (!title || !content || !categoryId) {
     throw new Error('All fields are required')
@@ -91,7 +91,7 @@ export async function createPost(formData: FormData) {
     })
   } catch (error) {
     console.error('Database Error (Post Creation):', error)
-    throw new Error('게시글 저장 중 오류가 발생했습니다. (DB 연결이나 스키마를 확인해주세요)')
+    throw new Error('게시글 저장 중 오류가 발생했습니다.')
   }
 
   // 파일 업로드 처리
@@ -100,17 +100,14 @@ export async function createPost(formData: FormData) {
     
     try {
       await fs.mkdir(uploadDir, { recursive: true })
-    } catch (err) {
-      console.error('Directory Creation Error:', err)
-    }
+    } catch (err) {}
 
-    for (const file of files) {
-      // string이거나 파일이 아닌 경우 제외 (Next.js 폼 데이터 특성)
-      if (!file || !(file instanceof File) || file.size === 0) continue
+    for (const f of files) {
+      const file = f as any;
+      if (!file || !file.size || !file.name) continue
 
       try {
         const buffer = Buffer.from(await file.arrayBuffer())
-        // 파일명 안정화 (특수문자 제거 및 한글 유지)
         const safeName = file.name.replace(/[<>:"/\\|?*]/g, '_').toLowerCase()
         const filename = `${Date.now()}-${safeName}`
         
@@ -126,7 +123,7 @@ export async function createPost(formData: FormData) {
           }
         })
       } catch (uploadError) {
-        console.error('File Upload Error for:', file.name, uploadError)
+        console.error('File Upload Error:', uploadError)
       }
     }
   }
