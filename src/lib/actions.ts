@@ -5,6 +5,8 @@ import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 import { auth, signIn, signOut } from '@/auth'
 import bcrypt from 'bcryptjs'
+import fs from 'fs/promises'
+import path from 'path'
 
 export async function register(formData: FormData) {
   const name = formData.get('name') as string
@@ -71,6 +73,7 @@ export async function createPost(formData: FormData) {
   const title = formData.get('title') as string
   const content = formData.get('content') as string
   const categoryId = formData.get('categoryId') as string
+  const files = formData.getAll('files') as File[]
 
   if (!title || !content || !categoryId) {
     throw new Error('All fields are required')
@@ -98,6 +101,29 @@ export async function createPost(formData: FormData) {
       authorId: session.user.id,
     },
   })
+
+  // 파일 업로드 처리
+  if (files && files.length > 0) {
+    for (const file of files) {
+      if (file.size === 0) continue
+
+      const buffer = Buffer.from(await file.arrayBuffer())
+      const filename = `${Date.now()}-${file.name}`
+      const uploadDir = path.join(process.cwd(), 'public/uploads')
+      
+      await fs.writeFile(path.join(uploadDir, filename), buffer)
+
+      await prisma.attachment.create({
+        data: {
+          postId: post.id,
+          filename: file.name,
+          url: `/uploads/${filename}`,
+          mimetype: file.type,
+          size: file.size,
+        }
+      })
+    }
+  }
 
   revalidatePath('/')
   redirect(`/posts/${post.id}`)

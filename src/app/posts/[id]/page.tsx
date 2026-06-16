@@ -4,7 +4,7 @@ import { PostViewCounter } from '@/components/PostViewCounter'
 import { PostActions } from '@/components/PostActions'
 import { LikeButton } from '@/components/LikeButton'
 import { CommentSection } from '@/components/CommentSection'
-import { Eye, Clock, User } from 'lucide-react'
+import { Eye, Clock, User, Download, FileText } from 'lucide-react'
 import { notFound } from 'next/navigation'
 import { auth } from '@/auth'
 
@@ -23,6 +23,7 @@ export default async function PostDetailPage({ params }: PageProps) {
       author: {
         select: { id: true, name: true }
       },
+      attachments: true,
       likes: {
         where: {
           userId: session?.user?.id || ''
@@ -90,6 +91,46 @@ export default async function PostDetailPage({ params }: PageProps) {
               {post.content}
             </p>
           </div>
+
+          {/* Attachments */}
+          {post.attachments.length > 0 && (
+            <div className="mb-12 space-y-4">
+              <h3 className="text-lg font-bold text-zinc-900 dark:text-zinc-100 flex items-center gap-2">
+                <FileText size={20} />
+                첨부 파일
+              </h3>
+              <div className="grid gap-4">
+                {post.attachments.map((file) => (
+                  <div key={file.id} className="group relative">
+                    {file.mimetype.startsWith('image/') ? (
+                      <div className="rounded-2xl overflow-hidden border border-zinc-200 dark:border-zinc-800">
+                        <img 
+                          src={file.url} 
+                          alt={file.filename}
+                          className="w-full h-auto object-cover"
+                        />
+                      </div>
+                    ) : (
+                      <a 
+                        href={file.url} 
+                        download={file.filename}
+                        className="flex items-center justify-between p-4 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900/50 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
+                      >
+                        <div className="flex items-center gap-3">
+                          <FileText className="text-zinc-400" />
+                          <div>
+                            <p className="text-sm font-medium text-zinc-900 dark:text-zinc-100">{file.filename}</p>
+                            <p className="text-xs text-zinc-500">{(file.size / 1024).toFixed(1)} KB</p>
+                          </div>
+                        </div>
+                        <Download size={18} className="text-zinc-400 group-hover:text-zinc-900 dark:group-hover:text-zinc-100 transition-colors" />
+                      </a>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
 
           {/* Footer / Like */}
           <div className="flex justify-center border-t border-zinc-100 dark:border-zinc-800 pt-12">
