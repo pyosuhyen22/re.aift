@@ -79,49 +79,55 @@ export async function createPost(formData: FormData) {
     throw new Error('All fields are required')
   }
 
-  const recentPost = await prisma.post.findFirst({
-    where: {
-      authorId: session.user.id,
-      title: title,
-      createdAt: {
-        gt: new Date(Date.now() - 5000)
-      }
-    }
-  })
-
-  if (recentPost) {
-    throw new Error('잠시 후에 다시 시도해주세요. (중복 글쓰기 방지)')
+  let post;
+  try {
+    post = await prisma.post.create({
+      data: {
+        title,
+        content,
+        categoryId,
+        authorId: session.user.id,
+      },
+    })
+  } catch (error) {
+    console.error('Database Error (Post Creation):', error)
+    throw new Error('게시글 저장 중 오류가 발생했습니다. (DB 연결이나 스키마를 확인해주세요)')
   }
-
-  const post = await prisma.post.create({
-    data: {
-      title,
-      content,
-      categoryId,
-      authorId: session.user.id,
-    },
-  })
 
   // 파일 업로드 처리
   if (files && files.length > 0) {
+    const uploadDir = path.join(process.cwd(), 'public/uploads')
+    
+    try {
+      await fs.mkdir(uploadDir, { recursive: true })
+    } catch (err) {
+      console.error('Directory Creation Error:', err)
+    }
+
     for (const file of files) {
-      if (file.size === 0) continue
+      if (!file || file.size === 0) continue
 
-      const buffer = Buffer.from(await file.arrayBuffer())
-      const filename = `${Date.now()}-${file.name}`
-      const uploadDir = path.join(process.cwd(), 'public/uploads')
-      
-      await fs.writeFile(path.join(uploadDir, filename), buffer)
+      try {
+        const buffer = Buffer.from(await file.arrayBuffer())
+        // 파일명 안정화 (특수문자 제거)
+        const safeName = file.name.replace(/[^a-z0-9.]/gi, '_').toLowerCase()
+        const filename = `${Date.now()}-${safeName}`
+        
+        await fs.writeFile(path.join(uploadDir, filename), buffer)
 
-      await prisma.attachment.create({
-        data: {
-          postId: post.id,
-          filename: file.name,
-          url: `/uploads/${filename}`,
-          mimetype: file.type,
-          size: file.size,
-        }
-      })
+        await prisma.attachment.create({
+          data: {
+            postId: post.id,
+            filename: file.name,
+            url: `/uploads/${filename}`,
+            mimetype: file.type || 'application/octet-stream',
+            size: file.size,
+          }
+        })
+      } catch (uploadError) {
+        console.error('File Upload Error:', uploadError)
+        // 개별 파일 실패 시 로그만 남기고 진행하거나, 원하시면 에러를 던질 수 있습니다.
+      }
     }
   }
 
