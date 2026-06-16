@@ -36,7 +36,6 @@ export default async function Home({ searchParams }: PageProps) {
   let categoriesCount = 0;
 
   try {
-    // 1차 시도: 첨부파일 포함하여 가져오기
     const [p, t, c] = await Promise.all([
       prisma.post.findMany({
         where,
@@ -57,9 +56,8 @@ export default async function Home({ searchParams }: PageProps) {
     total = t;
     categoriesCount = c;
   } catch (error) {
-    console.error("Failsafe: Fetching without attachments...");
+    console.error("Failsafe: Fetching basic data...");
     try {
-      // 2차 시도 (실패 시): 첨부파일 제외하고 기본 데이터만 가져오기
       const [p2, t2, c2] = await Promise.all([
         prisma.post.findMany({
           where,
@@ -79,22 +77,21 @@ export default async function Home({ searchParams }: PageProps) {
       total = t2;
       categoriesCount = c2;
     } catch (innerError) {
-      console.error("Critical: Even basic fetch failed", innerError);
+      console.error("Critical: Database error", innerError);
     }
   }
 
-  // 자동 카테고리 생성 (공지 추가)
   if (categoriesCount === 0) {
     try {
       await prisma.category.createMany({
         data: [{ name: '공지' }, { name: '일반' }, { name: '질문' }]
-      })
+      }).catch(() => {});
     } catch (e) {}
   }
 
   const categories = await prisma.category.findMany({
     orderBy: { name: 'asc' }
-  })
+  }).catch(() => []);
 
   const totalPages = Math.ceil(total / limit)
 
@@ -102,7 +99,6 @@ export default async function Home({ searchParams }: PageProps) {
     <>
       <Navbar />
       <main className="container mx-auto px-4 py-8 flex-1">
-        {/* Category & Search Filter */}
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
           <div className="flex flex-wrap gap-2">
             <Link
@@ -143,7 +139,6 @@ export default async function Home({ searchParams }: PageProps) {
           </form>
         </div>
 
-        {/* Post List */}
         <div className="grid gap-4">
           {posts.length === 0 ? (
             <div className="text-center py-20 text-zinc-500 dark:text-zinc-400">
@@ -158,7 +153,7 @@ export default async function Home({ searchParams }: PageProps) {
               >
                 <div className="flex items-center gap-2 mb-2">
                   <span className="text-xs font-bold px-2 py-0.5 rounded bg-zinc-100 dark:bg-zinc-800 text-zinc-500 dark:text-zinc-400">
-                    {post.category.name}
+                    {post.category?.name || '일반'}
                   </span>
                   <span className="text-xs text-zinc-400 dark:text-zinc-500">
                     {new Date(post.createdAt).toLocaleDateString()}
@@ -171,18 +166,18 @@ export default async function Home({ searchParams }: PageProps) {
                   {post.content}
                 </p>
                 <div className="flex items-center gap-4 text-xs text-zinc-400 font-medium border-t border-zinc-100 dark:border-zinc-800 pt-4">
-                  <span className="text-zinc-600 dark:text-zinc-300 font-semibold">{post.author.name}</span>
+                  <span className="text-zinc-600 dark:text-zinc-300 font-semibold">{post.author?.name || '익명'}</span>
                   <div className="flex items-center gap-1 ml-auto">
                     <Eye size={14} />
                     {post.views}
                   </div>
                   <div className="flex items-center gap-1">
                     <Heart size={14} />
-                    {post._count.likes}
+                    {post._count?.likes || 0}
                   </div>
                   <div className="flex items-center gap-1">
                     <MessageSquare size={14} />
-                    {post._count.comments}
+                    {post._count?.comments || 0}
                   </div>
                 </div>
               </Link>
@@ -190,7 +185,6 @@ export default async function Home({ searchParams }: PageProps) {
           )}
         </div>
 
-        {/* Pagination */}
         {totalPages > 1 && (
           <div className="flex justify-center items-center gap-2 mt-12">
             {page > 1 && (
