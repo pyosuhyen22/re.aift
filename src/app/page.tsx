@@ -58,25 +58,29 @@ export default async function Home({ searchParams }: PageProps) {
     categoriesCount = c;
   } catch (error) {
     console.error("Failsafe: Fetching without attachments...");
-    // 2차 시도 (실패 시): 첨부파일 제외하고 기본 데이터만 가져오기
-    const [p, t, c] = await Promise.all([
-      prisma.post.findMany({
-        where,
-        include: {
-          category: true,
-          author: { select: { name: true } },
-          _count: { select: { comments: true, likes: true } }
-        },
-        orderBy: { createdAt: 'desc' },
-        skip,
-        take: limit,
-      }),
-      prisma.post.count({ where }),
-      prisma.category.count(),
-    ]);
-    posts = p.map(post => ({ ...post, attachments: [] }));
-    total = t;
-    categoriesCount = c;
+    try {
+      // 2차 시도 (실패 시): 첨부파일 제외하고 기본 데이터만 가져오기
+      const [p2, t2, c2] = await Promise.all([
+        prisma.post.findMany({
+          where,
+          include: {
+            category: true,
+            author: { select: { name: true } },
+            _count: { select: { comments: true, likes: true } }
+          },
+          orderBy: { createdAt: 'desc' },
+          skip,
+          take: limit,
+        }),
+        prisma.post.count({ where }),
+        prisma.category.count(),
+      ]);
+      posts = p2.map(post => ({ ...post, attachments: [] }));
+      total = t2;
+      categoriesCount = c2;
+    } catch (innerError) {
+      console.error("Critical: Even basic fetch failed", innerError);
+    }
   }
 
   // 자동 카테고리 생성 (공지 추가)
