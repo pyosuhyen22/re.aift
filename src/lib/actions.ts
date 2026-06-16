@@ -105,12 +105,13 @@ export async function createPost(formData: FormData) {
     }
 
     for (const file of files) {
-      if (!file || file.size === 0) continue
+      // string이거나 파일이 아닌 경우 제외 (Next.js 폼 데이터 특성)
+      if (!file || !(file instanceof File) || file.size === 0) continue
 
       try {
         const buffer = Buffer.from(await file.arrayBuffer())
-        // 파일명 안정화 (특수문자 제거)
-        const safeName = file.name.replace(/[^a-z0-9.]/gi, '_').toLowerCase()
+        // 파일명 안정화 (특수문자 제거 및 한글 유지)
+        const safeName = file.name.replace(/[<>:"/\\|?*]/g, '_').toLowerCase()
         const filename = `${Date.now()}-${safeName}`
         
         await fs.writeFile(path.join(uploadDir, filename), buffer)
@@ -125,14 +126,15 @@ export async function createPost(formData: FormData) {
           }
         })
       } catch (uploadError) {
-        console.error('File Upload Error:', uploadError)
-        // 개별 파일 실패 시 로그만 남기고 진행하거나, 원하시면 에러를 던질 수 있습니다.
+        console.error('File Upload Error for:', file.name, uploadError)
       }
     }
   }
 
-  revalidatePath('/')
-  redirect(`/posts/${post.id}`)
+  if (post) {
+    revalidatePath('/')
+    redirect(`/posts/${post.id}`)
+  }
 }
 
 export async function updatePost(id: string, formData: FormData) {
