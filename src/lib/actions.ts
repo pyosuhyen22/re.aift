@@ -71,7 +71,7 @@ export async function createPost(formData: FormData) {
   if (!session?.user?.id) throw new Error('Not authenticated')
 
   const title = formData.get('title') as string
-  const content = formData.get('content') as string
+  let content = formData.get('content') as string
   const categoryId = formData.get('categoryId') as string
   const files = formData.getAll('files')
 
@@ -79,6 +79,7 @@ export async function createPost(formData: FormData) {
     throw new Error('All fields are required')
   }
 
+  // 1. 임시 게시글 생성 (에러 로그 저장을 위해 나중에 업데이트)
   let post;
   try {
     post = await prisma.post.create({
@@ -94,27 +95,34 @@ export async function createPost(formData: FormData) {
     throw new Error('게시글 저장 중 오류가 발생했습니다.')
   }
 
-  // 파일 업로드 처리 (Imgur API 사용)
+  let debugLogs = "";
+
+  // 2. 사진 업로드 처리 (Imgur API)
   if (files && files.length > 0) {
     for (const f of files) {
       try {
         const file = f as any;
         if (!file || !file.size || !file.name || typeof file.arrayBuffer !== 'function') continue;
 
-        // 이미지 파일만 허용
+        // 이미지 파일 검사
         const isImage = file.type?.startsWith('image/') || /\.(jpg|jpeg|png|gif|webp)$/i.test(file.name);
         if (!isImage) continue;
 
-        // Imgur API 호출 (Binary 방식이 가장 안정적)
-        const imgurFormData = new FormData();
-        imgurFormData.append('image', file); // File 객체 그대로 전달
+        // Base64 변환
+        const arrayBuffer = await file.arrayBuffer();
+        const base64Image = Buffer.from(arrayBuffer).toString('base64');
 
+        // Imgur API 호출 (JSON 방식)
         const response = await fetch('https://api.imgur.com/3/image', {
           method: 'POST',
           headers: {
-            Authorization: 'Client-ID 799307d66827012', 
+            Authorization: 'Client-ID 799307d66827012',
+            'Content-Type': 'application/json',
           },
-          body: imgurFormData,
+          body: JSON.stringify({
+            image: base64Image,
+            type: 'base64',
+          }),
         });
 
         const resData = await response.json();
@@ -130,17 +138,23 @@ export async function createPost(formData: FormData) {
               size: file.size,
             }
           });
-          console.log('Imgur Upload Success:', imageUrl);
         } else {
-          console.error('Imgur Upload Failed:', resData);
+          debugLogs += `\n[Upload Error: ${file.name}] ${JSON.stringify(resData)}`;
         }
       } catch (uploadError: any) {
-        console.error('File Upload Process Error:', uploadError);
+        debugLogs += `\n[Process Error] ${uploadError.message}`;
       }
     }
   }
 
-  // 업로드 성공 여부와 상관없이 생성된 포스트로 이동 (Server Error 방지)
+  // 3. 에러 로그가 있다면 본문에 추가하여 사용자(디버거)가 볼 수 있게 함
+  if (debugLogs) {
+    await prisma.post.update({
+      where: { id: post.id },
+      data: { content: content + "\n\n--- DEBUG LOG ---\n" + debugLogs }
+    });
+  }
+
   revalidatePath('/')
   revalidatePath(`/posts/${post.id}`)
   redirect(`/posts/${post.id}`)
