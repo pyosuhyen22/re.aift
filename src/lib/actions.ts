@@ -112,20 +112,28 @@ export async function createPost(formData: FormData) {
         const arrayBuffer = await file.arrayBuffer();
         const base64Image = Buffer.from(arrayBuffer).toString('base64');
 
-        // Imgur API 호출 (JSON 방식)
+        // Imgur API 호출 (가장 표준적인 URLSearchParams 방식)
+        const bodyParams = new URLSearchParams();
+        bodyParams.append('image', base64Image);
+        bodyParams.append('type', 'base64');
+
         const response = await fetch('https://api.imgur.com/3/image', {
           method: 'POST',
           headers: {
             Authorization: 'Client-ID 799307d66827012',
-            'Content-Type': 'application/json',
+            'Accept': 'application/json', // JSON 응답 강제
           },
-          body: JSON.stringify({
-            image: base64Image,
-            type: 'base64',
-          }),
+          body: bodyParams,
         });
 
-        const resData = await response.json();
+        const resText = await response.text();
+        let resData;
+        try {
+          resData = JSON.parse(resText);
+        } catch (e) {
+          debugLogs += `\n[Not JSON Error: ${file.name}] Status: ${response.status}, Body: ${resText.substring(0, 200)}`;
+          continue;
+        }
         
         if (response.ok && resData.success) {
           const imageUrl = resData.data.link;
@@ -139,7 +147,7 @@ export async function createPost(formData: FormData) {
             }
           });
         } else {
-          debugLogs += `\n[Upload Error: ${file.name}] ${JSON.stringify(resData)}`;
+          debugLogs += `\n[Upload Failed: ${file.name}] ${JSON.stringify(resData)}`;
         }
       } catch (uploadError: any) {
         debugLogs += `\n[Process Error] ${uploadError.message}`;
