@@ -113,24 +113,22 @@ export async function createPost(formData: FormData) {
         const response = await fetch('https://api.imgur.com/3/image', {
           method: 'POST',
           headers: {
-            Authorization: 'Client-ID 799307d66827012', // 공용 Client-ID (필요시 교체 가능)
-            'Content-Type': 'application/json',
+            Authorization: 'Client-ID 799307d66827012', 
           },
           body: JSON.stringify({
             image: base64Image,
             type: 'base64',
-            name: file.name,
-            title: title,
           }),
         });
 
-        if (!response.ok) {
-          const errorData = await response.json();
-          console.error('Imgur Upload Error Details:', errorData);
-          continue;
+        const resData = await response.json();
+        
+        if (!response.ok || !resData.success) {
+          console.error('Imgur Upload Failed:', resData);
+          // 업로드 실패 시 에러를 던져서 사용자에게 알림 (선택 사항)
+          throw new Error('이미지 업로드에 실패했습니다. (Imgur API 오류)');
         }
 
-        const resData = await response.json();
         const imageUrl = resData.data.link;
 
         await prisma.attachment.create({
@@ -142,8 +140,10 @@ export async function createPost(formData: FormData) {
             size: file.size,
           }
         })
-      } catch (uploadError) {
+      } catch (uploadError: any) {
         console.error('File Upload Error (Imgur):', uploadError)
+        // 개별 파일 업로드 실패 시 전체 프로세스를 중단할지 결정
+        throw new Error(uploadError.message || '이미지 처리 중 오류가 발생했습니다.');
       }
     }
   }
