@@ -124,64 +124,43 @@ export default async function Home({ searchParams }: PageProps) {
               게시글이 없습니다.
             </div>
           ) : (
-            posts.map((post) => {
-              const firstImage = post.attachments.find(f => 
-                f.mimetype.startsWith('image/') || /\.(jpg|jpeg|png|gif|webp)$/i.test(f.filename)
-              )
-              
-              return (
-                <Link
-                  key={post.id}
-                  href={`/posts/${post.id}`}
-                  className="group block p-6 rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900/50 hover:border-zinc-400 dark:hover:border-zinc-600 transition-all shadow-sm"
-                >
-                  <div className="flex gap-6">
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 mb-2">
-                        <span className="text-xs font-bold px-2 py-0.5 rounded bg-zinc-100 dark:bg-zinc-800 text-zinc-500 dark:text-zinc-400">
-                          {post.category.name}
-                        </span>
-                        <span className="text-xs text-zinc-400 dark:text-zinc-500">
-                          {new Date(post.createdAt).toLocaleDateString()}
-                        </span>
-                      </div>
-                      <h2 className="text-xl font-bold mb-2 text-zinc-900 dark:text-zinc-100 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
-                        {post.title}
-                      </h2>
-                      <p className="text-zinc-500 dark:text-zinc-400 line-clamp-2 text-sm mb-4">
-                        {post.content}
-                      </p>
-                    </div>
-                    
-                    {firstImage && (
-                      <div className="w-24 h-24 md:w-32 md:h-32 rounded-xl overflow-hidden border border-zinc-100 dark:border-zinc-800 flex-shrink-0">
-                        <img 
-                          src={firstImage.url} 
-                          alt={post.title}
-                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                        />
-                      </div>
-                    )}
+            posts.map((post) => (
+              <Link
+                key={post.id}
+                href={`/posts/${post.id}`}
+                className="group block p-6 rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900/50 hover:border-zinc-400 dark:hover:border-zinc-600 transition-all shadow-sm"
+              >
+                <div className="flex items-center gap-2 mb-2">
+                  <span className="text-xs font-bold px-2 py-0.5 rounded bg-zinc-100 dark:bg-zinc-800 text-zinc-500 dark:text-zinc-400">
+                    {post.category.name}
+                  </span>
+                  <span className="text-xs text-zinc-400 dark:text-zinc-500">
+                    {new Date(post.createdAt).toLocaleDateString()}
+                  </span>
+                </div>
+                <h2 className="text-xl font-bold mb-2 text-zinc-900 dark:text-zinc-100 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
+                  {post.title}
+                </h2>
+                <p className="text-zinc-500 dark:text-zinc-400 line-clamp-2 text-sm mb-4">
+                  {post.content}
+                </p>
+                <div className="flex items-center gap-4 text-xs text-zinc-400 font-medium border-t border-zinc-100 dark:border-zinc-800 pt-4">
+                  <span className="text-zinc-600 dark:text-zinc-300 font-semibold">{post.author.name}</span>
+                  <div className="flex items-center gap-1 ml-auto">
+                    <Eye size={14} />
+                    {post.views}
                   </div>
-                  
-                  <div className="flex items-center gap-4 text-xs text-zinc-400 font-medium border-t border-zinc-100 dark:border-zinc-800 pt-4 mt-2">
-                    <span className="text-zinc-600 dark:text-zinc-300 font-semibold">{post.author.name}</span>
-                    <div className="flex items-center gap-1 ml-auto">
-                      <Eye size={14} />
-                      {post.views}
-                    </div>
-                    <div className="flex items-center gap-1">
-                      <Heart size={14} />
-                      {post._count.likes}
-                    </div>
-                    <div className="flex items-center gap-1">
-                      <MessageSquare size={14} />
-                      {post._count.comments}
-                    </div>
+                  <div className="flex items-center gap-1">
+                    <Heart size={14} />
+                    {post._count.likes}
                   </div>
-                </Link>
-              )
-            })
+                  <div className="flex items-center gap-1">
+                    <MessageSquare size={14} />
+                    {post._count.comments}
+                  </div>
+                </div>
+              </Link>
+            ))
           )}
         </div>
 
