@@ -100,42 +100,35 @@ export default async function PostDetailPage({ params }: PageProps) {
             <div className="mt-12 pt-12 border-t border-zinc-100 dark:border-zinc-800">
               <h3 className="text-xl font-black text-zinc-900 dark:text-zinc-100 flex items-center gap-2 mb-8">
                 <FileText size={24} className="text-blue-500" />
-                이미지 ({post.attachments.length})
+                업로드된 이미지 ({post.attachments.length})
               </h3>
               
               <div className="grid gap-10">
-                {post.attachments.map((file: any) => {
-                  const isImage = file.mimetype?.startsWith('image/') || 
-                                /\.(jpg|jpeg|png|gif|webp)$/i.test(file.filename);
-                  
-                  if (!isImage) return null;
-
-                  return (
-                    <div key={file.id} className="space-y-4">
-                      <div className="space-y-3">
-                        <div className="rounded-3xl overflow-hidden border-2 border-zinc-100 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-950 shadow-sm">
-                          <img 
-                            src={file.url} 
-                            alt={file.filename}
-                            className="w-full h-auto max-h-[2000px] object-contain mx-auto"
-                            loading="lazy"
-                          />
-                        </div>
-                        <div className="flex items-center justify-between px-2">
-                          <span className="text-sm font-bold text-zinc-500 truncate max-w-[70%]">{file.filename}</span>
-                          <a 
-                            href={file.url} 
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="px-4 py-1.5 rounded-full bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 text-xs font-black hover:bg-blue-600 hover:text-white transition-all flex items-center gap-1.5"
-                          >
-                            <Download size={14} /> 크게 보기
-                          </a>
-                        </div>
+                {post.attachments.map((file: any) => (
+                  <div key={file.id} className="space-y-4">
+                    <div className="space-y-3">
+                      <div className="rounded-3xl overflow-hidden border-2 border-zinc-100 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-950 shadow-sm">
+                        <img 
+                          src={file.url} 
+                          alt={file.filename}
+                          className="w-full h-auto max-h-[2000px] object-contain mx-auto"
+                          loading="eager"
+                        />
+                      </div>
+                      <div className="flex items-center justify-between px-2">
+                        <span className="text-sm font-bold text-zinc-500 truncate max-w-[70%]">{file.filename}</span>
+                        <a 
+                          href={file.url} 
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="px-4 py-1.5 rounded-full bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 text-xs font-black hover:bg-blue-600 hover:text-white transition-all flex items-center gap-1.5"
+                        >
+                          <Download size={14} /> 원본 보기
+                        </a>
                       </div>
                     </div>
-                  );
-                })}
+                  </div>
+                ))}
               </div>
             </div>
           )}

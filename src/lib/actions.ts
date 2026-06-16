@@ -105,14 +105,9 @@ export async function createPost(formData: FormData) {
         const isImage = file.type?.startsWith('image/') || /\.(jpg|jpeg|png|gif|webp)$/i.test(file.name);
         if (!isImage) continue;
 
-        const arrayBuffer = await file.arrayBuffer();
-        const buffer = Buffer.from(arrayBuffer);
-        const base64Image = buffer.toString('base64');
-
-        // Imgur API 호출 (FormData 방식이 더 안정적)
+        // Imgur API 호출 (Binary 방식이 가장 안정적)
         const imgurFormData = new FormData();
-        imgurFormData.append('image', base64Image);
-        imgurFormData.append('type', 'base64');
+        imgurFormData.append('image', file); // File 객체 그대로 전달
 
         const response = await fetch('https://api.imgur.com/3/image', {
           method: 'POST',
@@ -135,18 +130,19 @@ export async function createPost(formData: FormData) {
               size: file.size,
             }
           });
+          console.log('Imgur Upload Success:', imageUrl);
         } else {
-          console.error('Imgur Upload Failed for a file:', resData);
+          console.error('Imgur Upload Failed:', resData);
         }
       } catch (uploadError: any) {
-        // 개별 파일 업로드 실패 시 로그만 남기고 다음 파일로 진행
-        console.error('Individual File Upload Error:', uploadError);
+        console.error('File Upload Process Error:', uploadError);
       }
     }
   }
 
   // 업로드 성공 여부와 상관없이 생성된 포스트로 이동 (Server Error 방지)
   revalidatePath('/')
+  revalidatePath(`/posts/${post.id}`)
   redirect(`/posts/${post.id}`)
 }
 
