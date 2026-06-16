@@ -85,6 +85,26 @@ export default async function PostDetailPage({ params }: PageProps) {
             </div>
           </header>
 
+          {/* Images - Shown prominently above content */}
+          {post.attachments.filter(f => 
+            f.mimetype.startsWith('image/') || 
+            /\.(jpg|jpeg|png|gif|webp)$/i.test(f.filename)
+          ).length > 0 && (
+            <div className="mb-8 space-y-4">
+              {post.attachments
+                .filter(f => f.mimetype.startsWith('image/') || /\.(jpg|jpeg|png|gif|webp)$/i.test(f.filename))
+                .map((file) => (
+                  <div key={file.id} className="rounded-2xl overflow-hidden border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-950">
+                    <img 
+                      src={file.url} 
+                      alt={file.filename}
+                      className="w-full h-auto max-h-[800px] object-contain mx-auto"
+                    />
+                  </div>
+                ))}
+            </div>
+          )}
+
           {/* Content */}
           <div className="prose dark:prose-invert max-w-none mb-12">
             <p className="whitespace-pre-wrap leading-relaxed text-lg text-zinc-800 dark:text-zinc-200">
@@ -92,42 +112,36 @@ export default async function PostDetailPage({ params }: PageProps) {
             </p>
           </div>
 
-          {/* Attachments */}
-          {post.attachments.length > 0 && (
+          {/* Other Attachments - Only non-images */}
+          {post.attachments.filter(f => 
+            !f.mimetype.startsWith('image/') && 
+            !/\.(jpg|jpeg|png|gif|webp)$/i.test(f.filename)
+          ).length > 0 && (
             <div className="mb-12 space-y-4">
               <h3 className="text-lg font-bold text-zinc-900 dark:text-zinc-100 flex items-center gap-2">
                 <FileText size={20} />
                 첨부 파일
               </h3>
               <div className="grid gap-4">
-                {post.attachments.map((file) => (
-                  <div key={file.id} className="group relative">
-                    {file.mimetype.startsWith('image/') ? (
-                      <div className="rounded-2xl overflow-hidden border border-zinc-200 dark:border-zinc-800">
-                        <img 
-                          src={file.url} 
-                          alt={file.filename}
-                          className="w-full h-auto object-cover"
-                        />
-                      </div>
-                    ) : (
-                      <a 
-                        href={file.url} 
-                        download={file.filename}
-                        className="flex items-center justify-between p-4 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900/50 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
-                      >
-                        <div className="flex items-center gap-3">
-                          <FileText className="text-zinc-400" />
-                          <div>
-                            <p className="text-sm font-medium text-zinc-900 dark:text-zinc-100">{file.filename}</p>
-                            <p className="text-xs text-zinc-500">{(file.size / 1024).toFixed(1)} KB</p>
-                          </div>
+                {post.attachments
+                  .filter(f => !f.mimetype.startsWith('image/') && !/\.(jpg|jpeg|png|gif|webp)$/i.test(f.filename))
+                  .map((file) => (
+                    <a 
+                      key={file.id}
+                      href={file.url} 
+                      download={file.filename}
+                      className="flex items-center justify-between p-4 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900/50 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors group"
+                    >
+                      <div className="flex items-center gap-3">
+                        <FileText className="text-zinc-400" />
+                        <div>
+                          <p className="text-sm font-medium text-zinc-900 dark:text-zinc-100">{file.filename}</p>
+                          <p className="text-xs text-zinc-500">{(file.size / 1024).toFixed(1)} KB</p>
                         </div>
-                        <Download size={18} className="text-zinc-400 group-hover:text-zinc-900 dark:group-hover:text-zinc-100 transition-colors" />
-                      </a>
-                    )}
-                  </div>
-                ))}
+                      </div>
+                      <Download size={18} className="text-zinc-400 group-hover:text-zinc-900 dark:group-hover:text-zinc-100 transition-colors" />
+                    </a>
+                  ))}
               </div>
             </div>
           )}
