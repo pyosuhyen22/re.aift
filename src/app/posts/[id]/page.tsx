@@ -16,32 +16,42 @@ export default async function PostDetailPage({ params }: PageProps) {
   const { id } = await params
   const session = await auth()
   
-  const post = await prisma.post.findUnique({
-    where: { id },
-    include: {
-      category: true,
-      author: {
-        select: { id: true, name: true }
-      },
-      attachments: true,
-      likes: {
-        where: {
-          userId: session?.user?.id || ''
-        }
-      },
-      _count: {
-        select: { likes: true }
-      },
-      comments: {
-        include: {
-          author: {
-            select: { id: true, name: true }
-          }
+  let post: any = null;
+
+  try {
+    // 1차 시도: 첨부파일 포함
+    post = await prisma.post.findUnique({
+      where: { id },
+      include: {
+        category: true,
+        author: { select: { id: true, name: true } },
+        attachments: true,
+        likes: { where: { userId: session?.user?.id || '' } },
+        _count: { select: { likes: true } },
+        comments: {
+          include: { author: { select: { id: true, name: true } } },
+          orderBy: { createdAt: 'desc' },
         },
-        orderBy: { createdAt: 'desc' },
       },
-    },
-  })
+    });
+  } catch (error) {
+    console.error("Failsafe: Post Detail fetch without attachments...");
+    // 2차 시도: 첨부파일 제외
+    post = await prisma.post.findUnique({
+      where: { id },
+      include: {
+        category: true,
+        author: { select: { id: true, name: true } },
+        likes: { where: { userId: session?.user?.id || '' } },
+        _count: { select: { likes: true } },
+        comments: {
+          include: { author: { select: { id: true, name: true } } },
+          orderBy: { createdAt: 'desc' },
+        },
+      },
+    });
+    if (post) post.attachments = [];
+  }
 
   if (!post) {
     notFound()
