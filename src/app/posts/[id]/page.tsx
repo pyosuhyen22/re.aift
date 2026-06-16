@@ -104,31 +104,35 @@ export default async function PostDetailPage({ params }: PageProps) {
               </h3>
               
               <div className="grid gap-10">
-                {post.attachments.map((file: any) => (
-                  <div key={file.id} className="space-y-4">
-                    <div className="space-y-3">
-                      <div className="rounded-3xl overflow-hidden border-2 border-zinc-100 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-950 shadow-sm">
-                        <img 
-                          src={file.url} 
-                          alt={file.filename}
-                          className="w-full h-auto max-h-[2000px] object-contain mx-auto"
-                          loading="eager"
-                        />
-                      </div>
-                      <div className="flex items-center justify-between px-2">
-                        <span className="text-sm font-bold text-zinc-500 truncate max-w-[70%]">{file.filename}</span>
-                        <a 
-                          href={file.url} 
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="px-4 py-1.5 rounded-full bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 text-xs font-black hover:bg-blue-600 hover:text-white transition-all flex items-center gap-1.5"
-                        >
-                          <Download size={14} /> 원본 보기
-                        </a>
+                {post.attachments.map((file: any) => {
+                  const imageUrl = file.data ? `/api/attachments/${file.id}` : file.url;
+                  
+                  return (
+                    <div key={file.id} className="space-y-4">
+                      <div className="space-y-3">
+                        <div className="rounded-3xl overflow-hidden border-2 border-zinc-100 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-950 shadow-sm">
+                          <img 
+                            src={imageUrl} 
+                            alt={file.filename}
+                            className="w-full h-auto max-h-[2000px] object-contain mx-auto"
+                            loading="eager"
+                          />
+                        </div>
+                        <div className="flex items-center justify-between px-2">
+                          <span className="text-sm font-bold text-zinc-500 truncate max-w-[70%]">{file.filename}</span>
+                          <a 
+                            href={imageUrl} 
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="px-4 py-1.5 rounded-full bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 text-xs font-black hover:bg-blue-600 hover:text-white transition-all flex items-center gap-1.5"
+                          >
+                            <Download size={14} /> 원본 보기
+                          </a>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </div>
           )}

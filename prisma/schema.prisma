@@ -47,7 +47,8 @@ model Post {
 
 model Attachment {
   id        String   @id @default(cuid())
-  url       String
+  url       String?
+  data      Bytes?
   filename  String
   mimetype  String
   size      Int

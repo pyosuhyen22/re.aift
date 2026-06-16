@@ -97,7 +97,7 @@ export async function createPost(formData: FormData) {
 
   let debugLogs = "";
 
-  // 2. 사진 업로드 처리 (Imgur API)
+  // 2. 사진 업로드 처리 (DB 직접 저장 방식)
   if (files && files.length > 0) {
     for (const f of files) {
       try {
@@ -108,49 +108,22 @@ export async function createPost(formData: FormData) {
         const isImage = file.type?.startsWith('image/') || /\.(jpg|jpeg|png|gif|webp)$/i.test(file.name);
         if (!isImage) continue;
 
-        // Base64 변환
+        // 파일을 Buffer로 변환
         const arrayBuffer = await file.arrayBuffer();
-        const base64Image = Buffer.from(arrayBuffer).toString('base64');
+        const buffer = Buffer.from(arrayBuffer);
 
-        // Imgur API 호출 (가장 표준적인 URLSearchParams 방식)
-        const bodyParams = new URLSearchParams();
-        bodyParams.append('image', base64Image);
-        bodyParams.append('type', 'base64');
-
-        const response = await fetch('https://api.imgur.com/3/image', {
-          method: 'POST',
-          headers: {
-            Authorization: 'Client-ID 799307d66827012',
-            'Accept': 'application/json', // JSON 응답 강제
-          },
-          body: bodyParams,
+        // DB에 직접 저장
+        await prisma.attachment.create({
+          data: {
+            postId: post.id,
+            filename: file.name,
+            mimetype: file.type || 'image/jpeg',
+            size: file.size,
+            data: buffer, // 바이너리 데이터 저장
+          }
         });
-
-        const resText = await response.text();
-        let resData;
-        try {
-          resData = JSON.parse(resText);
-        } catch (e) {
-          debugLogs += `\n[Not JSON Error: ${file.name}] Status: ${response.status}, Body: ${resText.substring(0, 200)}`;
-          continue;
-        }
-        
-        if (response.ok && resData.success) {
-          const imageUrl = resData.data.link;
-          await prisma.attachment.create({
-            data: {
-              postId: post.id,
-              filename: file.name,
-              url: imageUrl,
-              mimetype: file.type || 'image/jpeg',
-              size: file.size,
-            }
-          });
-        } else {
-          debugLogs += `\n[Upload Failed: ${file.name}] ${JSON.stringify(resData)}`;
-        }
       } catch (uploadError: any) {
-        debugLogs += `\n[Process Error] ${uploadError.message}`;
+        debugLogs += `\n[DB Storage Error] ${uploadError.message}`;
       }
     }
   }
