@@ -23,7 +23,7 @@ export default async function NewPostPage() {
             <p className="text-zinc-500 text-sm">자유롭게 이야기를 나누어보세요.</p>
           </div>
 
-          <form action={createPost} enctype="multipart/form-data" className="space-y-6">
+          <form action={createPost} encType="multipart/form-data" className="space-y-6">
             <div className="space-y-2">
               <label className="text-sm font-medium text-zinc-700 dark:text-zinc-300">카테고리</label>
               <select
