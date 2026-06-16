@@ -95,6 +95,13 @@ export default async function PostDetailPage({ params }: PageProps) {
             </div>
           </header>
 
+          {/* Content Section */}
+          <div className="mb-12 min-h-[200px]">
+            <p className="text-zinc-800 dark:text-zinc-200 leading-relaxed whitespace-pre-wrap text-lg">
+              {post.content}
+            </p>
+          </div>
+
           {/* Images & Attachments Section */}
           {post.attachments.length > 0 && (
             <div className="mt-12 pt-12 border-t border-zinc-100 dark:border-zinc-800">
@@ -104,7 +111,7 @@ export default async function PostDetailPage({ params }: PageProps) {
               </h3>
               
               <div className="grid gap-10">
-                {post.attachments.map((file) => {
+                {post.attachments.map((file: any) => {
                   const isImage = file.mimetype.startsWith('image/') || 
                                 /\.(jpg|jpeg|png|gif|webp)$/i.test(file.filename);
                   

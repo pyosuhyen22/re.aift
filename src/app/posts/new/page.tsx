@@ -63,14 +63,15 @@ export default async function NewPostPage() {
             </div>
 
             <div className="space-y-2">
-              <label className="text-sm font-medium text-zinc-700 dark:text-zinc-300">첨부 파일 (사진, 파일 등)</label>
+              <label className="text-sm font-medium text-zinc-700 dark:text-zinc-300">첨부 파일 (사진 전용)</label>
               <input
                 type="file"
                 name="files"
                 multiple
+                accept="image/*"
                 className="w-full p-2.5 rounded-xl border border-zinc-200 dark:border-zinc-700 bg-transparent text-zinc-900 dark:text-zinc-100 focus:ring-2 focus:ring-zinc-500 outline-none transition-all"
               />
-              <p className="text-xs text-zinc-500">여러 개의 파일을 선택할 수 있습니다.</p>
+              <p className="text-xs text-zinc-500">여러 개의 사진을 선택할 수 있습니다.</p>
             </div>
 
             <div className="flex gap-4 pt-4">

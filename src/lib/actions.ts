@@ -106,6 +106,10 @@ export async function createPost(formData: FormData) {
       const file = f as any;
       if (!file || !file.size || !file.name) continue
 
+      // 이미지 파일만 허용
+      const isImage = file.type?.startsWith('image/') || /\.(jpg|jpeg|png|gif|webp)$/i.test(file.name);
+      if (!isImage) continue;
+
       try {
         const buffer = Buffer.from(await file.arrayBuffer())
         const safeName = file.name.replace(/[<>:"/\\|?*]/g, '_').toLowerCase()
