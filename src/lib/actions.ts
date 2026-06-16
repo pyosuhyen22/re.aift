@@ -94,14 +94,8 @@ export async function createPost(formData: FormData) {
     throw new Error('게시글 저장 중 오류가 발생했습니다.')
   }
 
-  // 파일 업로드 처리
+  // 파일 업로드 처리 (Imgur API 사용)
   if (files && files.length > 0) {
-    const uploadDir = path.join(process.cwd(), 'public/uploads')
-    
-    try {
-      await fs.mkdir(uploadDir, { recursive: true })
-    } catch (err) {}
-
     for (const f of files) {
       const file = f as any;
       if (!file || !file.size || !file.name) continue
@@ -111,23 +105,45 @@ export async function createPost(formData: FormData) {
       if (!isImage) continue;
 
       try {
-        const buffer = Buffer.from(await file.arrayBuffer())
-        const safeName = file.name.replace(/[<>:"/\\|?*]/g, '_').toLowerCase()
-        const filename = `${Date.now()}-${safeName}`
-        
-        await fs.writeFile(path.join(uploadDir, filename), buffer)
+        const arrayBuffer = await file.arrayBuffer();
+        const buffer = Buffer.from(arrayBuffer);
+        const base64Image = buffer.toString('base64');
+
+        // Imgur API 호출 (익명 업로드)
+        const response = await fetch('https://api.imgur.com/3/image', {
+          method: 'POST',
+          headers: {
+            Authorization: 'Client-ID 799307d66827012', // 공용 Client-ID (필요시 교체 가능)
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            image: base64Image,
+            type: 'base64',
+            name: file.name,
+            title: title,
+          }),
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json();
+          console.error('Imgur Upload Error Details:', errorData);
+          continue;
+        }
+
+        const resData = await response.json();
+        const imageUrl = resData.data.link;
 
         await prisma.attachment.create({
           data: {
             postId: post.id,
             filename: file.name,
-            url: `/uploads/${filename}`,
-            mimetype: file.type || 'application/octet-stream',
+            url: imageUrl,
+            mimetype: file.type || 'image/jpeg',
             size: file.size,
           }
         })
       } catch (uploadError) {
-        console.error('File Upload Error:', uploadError)
+        console.error('File Upload Error (Imgur):', uploadError)
       }
     }
   }
