@@ -1,8 +1,9 @@
-const { PrismaClient } = require('@prisma/client');
+const { PrismaClient } = require("@prisma/client");
 const prisma = new PrismaClient();
 
 async function main() {
-  const categories = ['일반', '질문', '공지', '정보'];
+  const categories = ["자유게시판", "질문답변", "정보공유"];
+
   for (const name of categories) {
     await prisma.category.upsert({
       where: { name },
@@ -10,7 +11,8 @@ async function main() {
       create: { name },
     });
   }
-  console.log('Categories seeded');
+
+  console.log("카테고리 시드 완료:", categories);
 }
 
 main()
